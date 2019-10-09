@@ -5,8 +5,7 @@ You can open several Clients but they need to be on the same network.
  
 > Change the IP Address of Server in clientChat() 
 ```
-s=new Socket(InetAddress.getByName("192.168.0.104"),MyServer.PORT);
-
+s=new Socket(InetAddress.getByName("Your_IP"),MyServer.PORT);
 ```
 > Create a database to store usernames and passwords and change database details in login() 
 
