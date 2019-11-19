@@ -14,8 +14,9 @@ class MyClient implements ActionListener
     public final static int PORT=3000;
     public final static String UPDATE_USERS="updateuserslist:";
     public final static String LOGOUT_MESSAGE="logmeout:";
+    public final static String SIGNUP_MESSAGE="signmeup:";
 
-    JButton sendButton, logoutButton,loginButton, exitButton;
+    JButton sendButton, logoutButton,loginButton, exitButton, addUser;
     JFrame chatWindow;
     JTextArea txtBroadcast;
     JTextArea txtMessage;
@@ -33,6 +34,7 @@ class MyClient implements ActionListener
         logoutButton=new JButton("Log out");
         loginButton=new JButton("Log in");
         exitButton=new JButton("Exit");
+        addUser = new JButton("Sign up");
 
         JPanel center1=new JPanel();
         center1.setLayout(new BorderLayout());
@@ -46,6 +48,7 @@ class MyClient implements ActionListener
 
         JPanel south2=new JPanel();
         south2.setLayout(new FlowLayout());
+        south2.add(addUser);
         south2.add(loginButton);
         south2.add(logoutButton);
         south2.add(exitButton);
@@ -69,6 +72,7 @@ class MyClient implements ActionListener
         chatWindow.setTitle("Login for Chat");
         chatWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         chatWindow.setVisible(true);
+        addUser.addActionListener(this);
         sendButton.addActionListener(this);
         logoutButton.addActionListener(this);
         loginButton.addActionListener(this);
@@ -97,6 +101,30 @@ class MyClient implements ActionListener
     public void actionPerformed(ActionEvent ev)
     {
         JButton temp=(JButton)ev.getSource();
+        if(temp==addUser)
+        {
+            JTextField user = new JTextField();
+            JTextField pass = new JPasswordField();
+            JTextField pass2 = new JPasswordField();
+            Object[] msg = {
+                "Username:", user,
+                "Password:", pass,
+                "Confirm Password:", pass2
+            };
+
+            int o = JOptionPane.showConfirmDialog(chatWindow, msg, "Sign Up", JOptionPane.OK_CANCEL_OPTION);
+            if (o == JOptionPane.OK_OPTION){
+                String uname = user.getText();
+                String pw = pass.getText();
+                String pw2 = pass2.getText();
+                if(uname.isEmpty() || pw.isEmpty() || pw2.isEmpty())
+                    JOptionPane.showMessageDialog(chatWindow,"Enter credentials.","Exit",JOptionPane.INFORMATION_MESSAGE);
+                else if(!pw.equals(pw2))
+                    JOptionPane.showMessageDialog(chatWindow,"Your passwords don't match. \nPlease enter valid password.","Exit",JOptionPane.INFORMATION_MESSAGE);
+                else
+                    clientChat(MyClient.SIGNUP_MESSAGE+uname,pw);
+            }
+        }
         if(temp==sendButton)
         {
             if(s==null)
@@ -125,11 +153,11 @@ class MyClient implements ActionListener
             int option = JOptionPane.showConfirmDialog(chatWindow, message, "Login", JOptionPane.OK_CANCEL_OPTION);
             if (option == JOptionPane.OK_OPTION){
                 String uname = username.getText();
-                String pass = password.getText();
-                if(uname.isEmpty() || pass.isEmpty())
+                String pwd = password.getText();
+                if(uname.isEmpty() || pwd.isEmpty())
                     JOptionPane.showMessageDialog(chatWindow,"Enter credentials.","Exit",JOptionPane.INFORMATION_MESSAGE);
                 else
-                    clientChat(uname,pass);
+                    clientChat(uname,pwd);
             }
             
             //if(uname!=null)
@@ -195,12 +223,24 @@ class MyClient implements ActionListener
     {
         try
         {
-            s=new Socket(InetAddress.getByName("172.16.25.49"),MyClient.PORT);
+            s=new Socket(InetAddress.getByName("192.168.0.111"),MyClient.PORT);
             dis=new DataInputStream(s.getInputStream());
             dos=new DataOutputStream(s.getOutputStream());
             dos.writeUTF(uname);
             dos.writeUTF(pass);
             String check = dis.readUTF();
+            if(check.equals("signedUser"))
+            {
+                JOptionPane.showMessageDialog(chatWindow, "User registered successfully.");
+            }
+            if(check.equals("userAlreadyExists"))
+            {
+                JOptionPane.showMessageDialog(chatWindow, "Username is taken. Try again.");
+            }
+            if(check.equals("null"))
+            {
+                JOptionPane.showMessageDialog(chatWindow, "Error during Sign up process. Please try again.");
+            }
             if(check.equals("valid"))
             {              
                 ClientThread ct=new ClientThread(dis,this);
@@ -210,7 +250,7 @@ class MyClient implements ActionListener
                 logoutButton.setEnabled(true);
                 loginButton.setEnabled(false);
             }
-            else
+            if(check.equals("invalid"))
             {
                 JOptionPane.showMessageDialog(chatWindow, "Invalid Username and Password");
                 

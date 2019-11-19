@@ -22,6 +22,7 @@ class MyServer
     public final static int PORT=3000;
     public final static String UPDATE_USERS="updateuserslist:";
     public final static String LOGOUT_MESSAGE="logmeout:";
+    public final static String SIGNUP_MESSAGE="signmeup:";
     public MyServer()
     {
         try
@@ -65,24 +66,57 @@ class MyThread implements Runnable
             DataOutputStream dos=new DataOutputStream(s.getOutputStream());
             username=dis.readUTF();
             password=dis.readUTF();
-            //System.out.print(username+" "+password);
-            boolean check = login(username, password);
-            //System.out.println(check);
-            if(check)
+            if(username.startsWith(MyServer.SIGNUP_MESSAGE))
             {
-                dos.writeUTF("valid");
-                al.add(s);
-                users.add(username);
-                tellEveryOne("****** "+ username+" Logged in at "+(new Date())+" ******");
-                sendNewUserList();
+                username = username.substring(MyServer.SIGNUP_MESSAGE.length());
+                dos.writeUTF(signup(username,password));
             }
-            else
-                dos.writeUTF("invalid");
+            else 
+            {
+                //System.out.print(username+" "+password);
+                boolean check = login(username, password);
+                //System.out.println(check);
+                if(check)
+                {
+                    dos.writeUTF("valid");
+                    al.add(s);
+                    users.add(username);
+                    tellEveryOne("****** "+ username+" Logged in at "+(new Date())+" ******");
+                    sendNewUserList();
+                }
+                else
+                    dos.writeUTF("invalid");
+            }            
         }
         catch(Exception e)
         {
             System.err.println("MyThread constructor  "+e);
         }
+    }
+    public String signup(String uname, String pass)
+    {
+        Connection con;
+        Statement stmt;
+        ResultSet rs;
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3308/chat", "root", "alohomora");
+            stmt = con.createStatement();
+            rs = stmt.executeQuery("select * from user where uname='"+uname+"';");
+            if(!rs.next())
+            {
+                stmt.executeUpdate("insert into user values('"+uname+"', '"+pass+"')");
+                return "signedUser";
+            }
+            else
+            {
+                return "userAlreadyExists";
+            }
+        } catch (ClassNotFoundException | SQLException ex) {
+            Logger.getLogger(MyClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return "null";
     }
     public boolean login(String uname, String pass)
     {
@@ -92,7 +126,7 @@ class MyThread implements Runnable
         try {
             Class.forName("com.mysql.jdbc.Driver");
             
-            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/chat", "root", "alohomora");
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3308/chat", "root", "alohomora");
             stmt = con.prepareStatement("select * from user;");
             rs = stmt.executeQuery("select * from user where uname='"+uname+"' and pass ='"+pass+"';");
             if(rs.next())
